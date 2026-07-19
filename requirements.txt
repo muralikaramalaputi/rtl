@@ -9,3 +9,4 @@ numpy
 pandas
 Pillow
 PyPDF2
+docx
