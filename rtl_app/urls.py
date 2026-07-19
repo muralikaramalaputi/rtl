@@ -1,0 +1,22 @@
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path(
+        "",
+        views.home,
+        name="home",
+    ),
+
+    path(
+        "download/",
+        views.download_verilog,
+        name="download_verilog",
+    ),
+
+    path(
+        "download_tb/",
+        views.download_tb,
+        name="download_tb",
+    ),
+]

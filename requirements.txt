@@ -1,0 +1,10 @@
+Django==5.2.9
+
+gunicorn
+whitenoise
+groq
+python-dotenv
+
+numpy
+pandas
+Pillow
