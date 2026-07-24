@@ -15,40 +15,32 @@
         }
 
         .container{
-
             max-width:1000px;
             margin:auto;
             background:white;
             padding:30px;
             border-radius:12px;
             box-shadow:0 0 15px rgba(0,0,0,.1);
-
         }
 
         h1{
-
             color:#1e3a8a;
-
         }
 
         textarea{
-
             width:100%;
             height:250px;
             padding:15px;
             font-size:16px;
             margin-top:10px;
-
+            resize:vertical;
         }
 
         input[type=file]{
-
             margin-top:15px;
-
         }
 
         button{
-
             margin-top:20px;
             padding:12px 30px;
             font-size:16px;
@@ -57,37 +49,42 @@
             color:white;
             border:none;
             border-radius:6px;
-
         }
 
         button:hover{
-
             background:#1d4ed8;
-
         }
 
         pre{
-
             background:#272822;
             color:#f8f8f2;
             padding:20px;
             overflow:auto;
             border-radius:8px;
-
         }
 
         .section{
-
             margin-top:40px;
-
         }
 
         .error{
             margin-top:20px;
-            padding:12px;
+            padding:15px;
             color:#991b1b;
             background:#fee2e2;
-            border-radius:6px;
+            border:1px solid #ef4444;
+            border-radius:8px;
+            font-weight:bold;
+        }
+
+        .success{
+            margin-top:20px;
+            padding:15px;
+            color:#166534;
+            background:#dcfce7;
+            border:1px solid #22c55e;
+            border-radius:8px;
+            font-weight:bold;
         }
 
     </style>
@@ -122,15 +119,21 @@
     <br>
 
     <button type="submit">
-
         Generate RTL & Testbench
-
     </button>
 
 </form>
 
 {% if error %}
-<div class="error">{{ error }}</div>
+<div class="error">
+    ❌ {{ error }}
+</div>
+{% endif %}
+
+{% if rtl %}
+<div class="success">
+    ✅ RTL and Testbench generated successfully.
+</div>
 {% endif %}
 
 {% if rtl %}
@@ -143,16 +146,13 @@
 
 <a href="{% url 'download_verilog' %}">
 <button>
-
 Download RTL (.v)
-
 </button>
 </a>
 
 </div>
 
 {% endif %}
-
 
 {% if tb %}
 
@@ -164,9 +164,7 @@ Download RTL (.v)
 
 <a href="{% url 'download_tb' %}">
 <button>
-
 Download Testbench (.v)
-
 </button>
 </a>
 

@@ -5,7 +5,7 @@ from docx import Document
 from django.shortcuts import render
 from django.http import FileResponse, Http404
 
-from .rtl_generator import GenerationError, generate_rtl
+from .rtl_generator import generate_rtl, GenerationError
 
 
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "output")
@@ -21,25 +21,25 @@ def extract_text(uploaded_file):
 
     filename = uploaded_file.name.lower()
 
-    # ---------------- TXT ----------------
+    # TXT
     if filename.endswith(".txt"):
         return uploaded_file.read().decode("utf-8")
 
-    # ---------------- PDF ----------------
+    # PDF
     elif filename.endswith(".pdf"):
-
         reader = PyPDF2.PdfReader(uploaded_file)
 
         text = ""
 
         for page in reader.pages:
             page_text = page.extract_text()
+
             if page_text:
                 text += page_text + "\n"
 
         return text
 
-    # ---------------- DOCX ----------------
+    # DOCX
     elif filename.endswith(".docx"):
 
         document = Document(uploaded_file)
@@ -66,26 +66,36 @@ def home(request):
 
         uploaded_file = request.FILES.get("spec_file")
 
-        # If user uploads a file, use file content
         if uploaded_file:
             specification = extract_text(uploaded_file)
 
         if specification:
 
             try:
+
                 rtl, tb = generate_rtl(specification)
 
                 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-                # Save RTL
                 with open(RTL_FILE, "w", encoding="utf-8") as f:
                     f.write(rtl)
 
-                # Save Testbench
                 with open(TB_FILE, "w", encoding="utf-8") as f:
                     f.write(tb)
+
             except GenerationError as exc:
+
                 error = str(exc)
+
+                rtl = ""
+                tb = ""
+
+                # Remove old generated files
+                if os.path.exists(RTL_FILE):
+                    os.remove(RTL_FILE)
+
+                if os.path.exists(TB_FILE):
+                    os.remove(TB_FILE)
 
     return render(
         request,
@@ -93,9 +103,9 @@ def home(request):
         {
             "rtl": rtl,
             "tb": tb,
+            "error": error,
             "download": os.path.exists(RTL_FILE),
             "download_tb": os.path.exists(TB_FILE),
-            "error": error,
         },
     )
 

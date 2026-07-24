@@ -1,45 +1,46 @@
-module tb_comparator8;
+module testbench;
 reg [7:0] a;
 reg [7:0] b;
-wire equal;
-wire greater;
-wire less;
+reg [2:0] opcode;
+wire [7:0] result;
 
-comparator8 uut (
-  .a(a),
-  .b(b),
-  .equal(equal),
-  .greater(greater),
-  .less(less)
+alu8 uut (
+    .a(a),
+    .b(b),
+    .opcode(opcode),
+    .result(result)
 );
 
 initial begin
-  $monitor("a = %h, b = %h, equal = %b, greater = %b, less = %b", a, b, equal, greater, less);
-  a = 8'h00; b = 8'h00; #10;
-  if (equal === 1'b1 && greater === 1'b0 && less === 1'b0) $display("PASS");
-  else $display("FAIL");
-  
-  a = 8'h10; b = 8'h00; #10;
-  if (equal === 1'b0 && greater === 1'b1 && less === 1'b0) $display("PASS");
-  else $display("FAIL");
-  
-  a = 8'h00; b = 8'h10; #10;
-  if (equal === 1'b0 && greater === 1'b0 && less === 1'b1) $display("PASS");
-  else $display("FAIL");
-  
-  a = 8'hFF; b = 8'hFF; #10;
-  if (equal === 1'b1 && greater === 1'b0 && less === 1'b0) $display("PASS");
-  else $display("FAIL");
-  
-  a = 8'h10; b = 8'h20; #10;
-  if (equal === 1'b0 && greater === 1'b0 && less === 1'b1) $display("PASS");
-  else $display("FAIL");
-  
-  a = 8'h20; b = 8'h10; #10;
-  if (equal === 1'b0 && greater === 1'b1 && less === 1'b0) $display("PASS");
-  else $display("FAIL");
-  
-  $finish;
+    $monitor("a = %h, b = %h, opcode = %h, result = %h", a, b, opcode, result);
+    a = 8'h00; b = 8'h00; opcode = 3'b000; #10;
+    if (result !== 8'h00) $display("FAIL"); else $display("PASS");
+    
+    a = 8'h05; b = 8'h03; opcode = 3'b000; #10;
+    if (result !== 8'h08) $display("FAIL"); else $display("PASS");
+    
+    a = 8'h05; b = 8'h03; opcode = 3'b001; #10;
+    if (result !== 8'h02) $display("FAIL"); else $display("PASS");
+    
+    a = 8'h05; b = 8'h03; opcode = 3'b010; #10;
+    if (result !== 8'h01) $display("FAIL"); else $display("PASS");
+    
+    a = 8'h05; b = 8'h03; opcode = 3'b011; #10;
+    if (result !== 8'h07) $display("FAIL"); else $display("PASS");
+    
+    a = 8'h05; b = 8'h03; opcode = 3'b100; #10;
+    if (result !== 8'h06) $display("FAIL"); else $display("PASS");
+    
+    a = 8'h05; b = 8'h00; opcode = 3'b101; #10;
+    if (result !== 8'h0A) $display("FAIL"); else $display("PASS");
+    
+    a = 8'h05; b = 8'h00; opcode = 3'b110; #10;
+    if (result !== 8'h02) $display("FAIL"); else $display("PASS");
+    
+    a = 8'h05; b = 8'h00; opcode = 3'b111; #10;
+    if (result !== 8'hFA) $display("FAIL"); else $display("PASS");
+    
+    $finish;
 end
 
 endmodule

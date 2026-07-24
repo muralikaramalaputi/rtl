@@ -21,9 +21,38 @@ RTL RULES
 - Do not use unsupported constructs.
 - Ensure the RTL compiles without syntax errors.
 - Include all required inputs and outputs.
-- Use combinational always @(*) blocks where appropriate.
-- Use sequential always @(posedge clk) only when required by the specification.
+- Use combinational always @(*) blocks only for combinational logic.
+- Use sequential always @(posedge clk) only for sequential logic.
 - Provide a default assignment in case statements.
+- Use non-blocking assignments (<=) for sequential logic.
+- Use blocking assignments (=) for combinational logic.
+- Do not infer unintended latches.
+- Ensure every signal is assigned correctly.
+
+====================================================
+OUTPUT DECLARATION RULES
+====================================================
+
+- Outputs assigned inside an always block MUST be declared as output reg.
+- Outputs driven by continuous assignment MUST be declared as output or output wire.
+- NEVER assign a wire inside an always block.
+- Use assign statements for simple continuous assignments.
+- Do NOT generate unnecessary always @(*) blocks for direct signal assignments.
+- Do NOT generate unnecessary case statements when a direct assignment is sufficient.
+- Ensure every output has exactly one driver.
+- Never mix procedural assignments and continuous assignments for the same signal.
+
+====================================================
+RTL CODING STYLE
+====================================================
+
+- Declare registers using reg.
+- Declare combinational outputs using wire (or output).
+- Separate combinational and sequential logic clearly.
+- Use meaningful intermediate signals only when necessary.
+- Avoid redundant logic.
+- Avoid unused signals.
+- Generate clean, readable RTL.
 
 ====================================================
 TESTBENCH RULES
@@ -67,6 +96,14 @@ Decoder, Encoder, Comparator, Logic Gates, Shifter, etc.):
 - NEVER generate reset.
 - Apply inputs directly.
 
+Sequential Logic:
+
+If the RTL is sequential (Counter, Register, FSM, Shift Register, etc.):
+
+- Generate an appropriate clock.
+- Generate reset only if the DUT has a reset input.
+- Drive sequential inputs synchronously.
+
 Signal Declaration:
 
 - Declare DUT inputs as reg.
@@ -80,8 +117,11 @@ Instantiation:
 Test Vectors:
 
 - Generate meaningful test vectors.
-- Cover every operation.
+- Cover all functional cases.
 - Cover boundary conditions where applicable.
+- Verify reset behavior.
+- Verify enable conditions (if present).
+- Verify overflow/wrap-around behavior (if applicable).
 
 Expected Results:
 
@@ -98,7 +138,7 @@ Checking:
 
 Simulation:
 
-- End using $finish.
+- Finish simulation using $finish.
 
 ====================================================
 VERILOG RULES
@@ -120,7 +160,14 @@ Wrong examples:
     8h15
     8hFF
 
-The generated Verilog must compile without syntax errors.
+- Declare outputs correctly based on how they are driven.
+- Never assign a wire inside an always block.
+- Never mix continuous assignments and procedural assignments.
+- Avoid redundant always blocks.
+- Avoid unnecessary case statements.
+- Use assign for simple output connections.
+- Ensure every module compiles successfully without syntax or elaboration errors.
+- Generate synthesizable, lint-clean RTL.
 
 Return ONLY Verilog code.
 """

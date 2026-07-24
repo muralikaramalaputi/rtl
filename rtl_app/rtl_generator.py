@@ -11,9 +11,7 @@ def _generate(prompt):
     """
     Generate text using Groq API.
     """
-
     try:
-
         completion = client.chat.completions.create(
             model=MODEL,
             temperature=0,
@@ -36,11 +34,84 @@ def _generate(prompt):
         raise GenerationError(str(e))
 
 
+def validate_requirement(specification):
+    """
+    Validate whether the requirement is related to RTL/Verilog.
+    """
+
+    validation_prompt = f"""
+You are an RTL requirement validator.
+
+Determine whether the following requirement is related to:
+
+- RTL
+- Verilog
+- VHDL
+- FPGA
+- ASIC
+- Digital Logic
+- Hardware Design
+- FSM
+- Counter
+- Register
+- Flip-Flop
+- ALU
+- Multiplier
+- Divider
+- MUX
+- DEMUX
+- Encoder
+- Decoder
+- Comparator
+- Memory
+- FIFO
+- RAM
+- ROM
+- UART
+- SPI
+- I2C
+- Processor
+- CPU
+- Cache
+- Bus
+- Synthesizable Hardware
+
+If the requirement belongs to digital hardware design reply exactly:
+
+VALID
+
+Otherwise reply exactly:
+
+INVALID
+
+Return ONLY one word.
+
+Requirement:
+
+{specification}
+"""
+
+    response = _generate(validation_prompt).strip().upper()
+
+    return response == "VALID"
+
+
 def generate_rtl(specification):
     """
     Generate RTL and Testbench.
     """
 
+    # -------------------------------------------------
+    # Validate Requirement
+    # -------------------------------------------------
+    if not validate_requirement(specification):
+        raise GenerationError(
+            "Requirement mismatch. Please provide a valid RTL/Verilog hardware specification."
+        )
+
+    # -------------------------------------------------
+    # RTL Generation
+    # -------------------------------------------------
     rtl_prompt = f"""
 Generate synthesizable Verilog RTL.
 
@@ -67,6 +138,9 @@ Requirements:
 
     rtl = _generate(rtl_prompt)
 
+    # -------------------------------------------------
+    # Testbench Generation
+    # -------------------------------------------------
     tb_prompt = f"""
 Generate a COMPLETE SELF-CHECKING Verilog Testbench.
 
