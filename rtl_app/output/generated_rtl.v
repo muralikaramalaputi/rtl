@@ -5,21 +5,23 @@ module alu8(
     output [7:0] result
 );
 
-reg [7:0] result;
+reg [7:0] result_reg;
 
 always @(*)
 begin
     case (opcode)
-        3'b000 : result = a + b;
-        3'b001 : result = a - b;
-        3'b010 : result = a & b;
-        3'b011 : result = a | b;
-        3'b100 : result = a ^ b;
-        3'b101 : result = a << 1;
-        3'b110 : result = a >> 1;
-        3'b111 : result = ~a;
-        default : result = 8'h00;
+        3'b000: result_reg = a + b;
+        3'b001: result_reg = a - b;
+        3'b010: result_reg = a & b;
+        3'b011: result_reg = a | b;
+        3'b100: result_reg = a ^ b;
+        3'b101: result_reg = a << 1;
+        3'b110: result_reg = a >> 1;
+        3'b111: result_reg = ~a;
+        default: result_reg = 8'b0;
     endcase
 end
+
+assign result = result_reg;
 
 endmodule
