@@ -11,7 +11,7 @@ from .rtl_generator import generate_rtl, GenerationError
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "output")
 
 RTL_FILE = os.path.join(OUTPUT_DIR, "generated_rtl.v")
-TB_FILE = os.path.join(OUTPUT_DIR, "generated_tb.v")
+TB_FILE = os.path.join(OUTPUT_DIR, "testbench.v")
 
 
 def extract_text(uploaded_file):
@@ -59,21 +59,31 @@ def home(request):
     rtl = ""
     tb = ""
     error = ""
+    specification = ""
+    test_case_count = "1"
 
     if request.method == "POST":
 
         specification = request.POST.get("specification", "").strip()
+        test_case_count = request.POST.get("test_case_count", "1").strip()
 
         uploaded_file = request.FILES.get("spec_file")
 
         if uploaded_file:
             specification = extract_text(uploaded_file)
 
-        if specification:
+        try:
+            test_case_count_value = int(test_case_count)
+            if not 1 <= test_case_count_value <= 50:
+                raise ValueError
+        except ValueError:
+            error = "Enter a whole number from 1 to 50 for the test case count."
+
+        if specification and not error:
 
             try:
 
-                rtl, tb = generate_rtl(specification)
+                rtl, tb = generate_rtl(specification, test_case_count_value)
 
                 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
@@ -104,6 +114,8 @@ def home(request):
             "rtl": rtl,
             "tb": tb,
             "error": error,
+            "specification": specification,
+            "test_case_count": test_case_count,
             "download": os.path.exists(RTL_FILE),
             "download_tb": os.path.exists(TB_FILE),
         },
@@ -130,5 +142,5 @@ def download_tb(request):
     return FileResponse(
         open(TB_FILE, "rb"),
         as_attachment=True,
-        filename="generated_tb.v",
+        filename="testbench.v",
     )
