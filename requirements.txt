@@ -3,6 +3,7 @@ Django==5.2.9
 gunicorn
 whitenoise
 google-genai
+groq
 python-dotenv
 
 numpy

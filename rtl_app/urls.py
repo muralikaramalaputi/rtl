@@ -19,4 +19,5 @@ urlpatterns = [
         views.download_tb,
         name="download_tb",
     ),
+    path("download_dv/<str:filename>/", views.download_dv, name="download_dv"),
 ]

@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 import PyPDF2
 from docx import Document
 
@@ -6,12 +7,19 @@ from django.shortcuts import render
 from django.http import FileResponse, Http404
 
 from .rtl_generator import generate_rtl, GenerationError
+from .dv_generator import generate_dv_artifacts
+from .verification import (
+    VerificationError,
+    compile_rtl_and_testbench,
+    verify_rtl_syntax_and_lint,
+)
 
 
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "output")
 
 RTL_FILE = os.path.join(OUTPUT_DIR, "generated_rtl.v")
 TB_FILE = os.path.join(OUTPUT_DIR, "testbench.v")
+DV_DIR = os.path.join(OUTPUT_DIR, "dv")
 
 
 def extract_text(uploaded_file):
@@ -59,13 +67,18 @@ def home(request):
     rtl = ""
     tb = ""
     error = ""
+    validation_log = ""
+    verification_results = []
+    dv_artifacts = []
     specification = ""
     test_case_count = "1"
+    provider = "gemini"
 
     if request.method == "POST":
 
         specification = request.POST.get("specification", "").strip()
         test_case_count = request.POST.get("test_case_count", "1").strip()
+        provider = request.POST.get("provider", "gemini").strip().lower()
 
         uploaded_file = request.FILES.get("spec_file")
 
@@ -74,8 +87,10 @@ def home(request):
 
         try:
             test_case_count_value = int(test_case_count)
+
             if not 1 <= test_case_count_value <= 50:
                 raise ValueError
+
         except ValueError:
             error = "Enter a whole number from 1 to 50 for the test case count."
 
@@ -83,19 +98,89 @@ def home(request):
 
             try:
 
-                rtl, tb = generate_rtl(specification, test_case_count_value)
+                # ---------------------------------------------------------
+                # STEP 1: Generate RTL + matching Testbench
+                # ---------------------------------------------------------
+                rtl, tb = generate_rtl(
+                    specification,
+                    test_case_count_value,
+                    provider,
+                )
 
-                os.makedirs(OUTPUT_DIR, exist_ok=True)
+                # ---------------------------------------------------------
+                # STEP 2: RTL Syntax Check + Lint
+                # ---------------------------------------------------------
+                report = verify_rtl_syntax_and_lint(rtl)
 
-                with open(RTL_FILE, "w", encoding="utf-8") as f:
+                validation_log = "\n".join(report)
+
+                verification_results = getattr(
+                    report,
+                    "results",
+                    []
+                )
+
+                os.makedirs(
+                    OUTPUT_DIR,
+                    exist_ok=True
+                )
+
+                # ---------------------------------------------------------
+                # STEP 3: Generate ALL DV artifacts using ONE Gemini request
+                # ---------------------------------------------------------
+                dv_files = generate_dv_artifacts(
+                    specification,
+                    rtl,
+                    OUTPUT_DIR,
+                    include_uvm=True,
+                    provider=provider,
+                )
+                dv_artifacts = [path.name for path in dv_files]
+
+                validation_log += "\n" + "\n".join(
+                    f"[ok] DV artifact saved: {path.name}"
+                    for path in dv_files
+                )
+
+                # ---------------------------------------------------------
+                # STEP 4: Compile RTL + matching testbench
+                # ---------------------------------------------------------
+                compile_report = compile_rtl_and_testbench(rtl, tb)
+                validation_log += "\n" + "\n".join(compile_report)
+                verification_results += getattr(compile_report, "results", [])
+
+                # ---------------------------------------------------------
+                # STEP 5: Save final validated artifacts
+                # ---------------------------------------------------------
+                with open(
+                    RTL_FILE,
+                    "w",
+                    encoding="utf-8"
+                ) as f:
                     f.write(rtl)
 
-                with open(TB_FILE, "w", encoding="utf-8") as f:
+                # ---------------------------------------------------------
+                # STEP 6: Save Testbench
+                # ---------------------------------------------------------
+                with open(
+                    TB_FILE,
+                    "w",
+                    encoding="utf-8"
+                ) as f:
                     f.write(tb)
 
-            except GenerationError as exc:
+            except (
+                GenerationError,
+                VerificationError
+            ) as exc:
 
                 error = str(exc)
+
+                verification_results = getattr(
+                    exc,
+                    "results",
+                    verification_results
+                )
 
                 rtl = ""
                 tb = ""
@@ -114,8 +199,12 @@ def home(request):
             "rtl": rtl,
             "tb": tb,
             "error": error,
+            "validation_log": validation_log,
+            "verification_results": verification_results,
+            "dv_artifacts": dv_artifacts,
             "specification": specification,
             "test_case_count": test_case_count,
+            "provider": provider,
             "download": os.path.exists(RTL_FILE),
             "download_tb": os.path.exists(TB_FILE),
         },
@@ -144,3 +233,13 @@ def download_tb(request):
         as_attachment=True,
         filename="testbench.v",
     )
+
+
+def download_dv(request, filename):
+    """Download a generated DV artifact without permitting path traversal."""
+    if Path(filename).name != filename:
+        raise Http404("DV artifact not found.")
+    artifact_path = Path(DV_DIR) / filename
+    if not artifact_path.is_file():
+        raise Http404("DV artifact not found.")
+    return FileResponse(open(artifact_path, "rb"), as_attachment=True, filename=filename)
