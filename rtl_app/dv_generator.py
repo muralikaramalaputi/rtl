@@ -985,7 +985,7 @@ def _generate_all_dv_artifacts(
         for attempt in range(3):
 
             try:
-                if provider == "groq":
+                if provider in {"groq", "openrouter"}:
                     response = client.chat.completions.create(
                         model=get_model(provider),
                         messages=[{"role": "user", "content": prompt}],
@@ -1019,7 +1019,7 @@ def _generate_all_dv_artifacts(
                 "Gemini returned no response for DV generation."
             )
 
-        if provider == "groq":
+        if provider in {"groq", "openrouter"}:
             content = response.choices[0].message.content
         else:
             content = getattr(response, "text", None)

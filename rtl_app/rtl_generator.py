@@ -46,7 +46,7 @@ def _generate(prompt, provider="gemini"):
 
         for attempt in range(3):
             try:
-                if provider == "groq":
+                if provider in {"groq", "openrouter"}:
                     completion = client.chat.completions.create(
                         model=get_model(provider),
                         messages=[
@@ -81,7 +81,7 @@ def _generate(prompt, provider="gemini"):
                 "Gemini did not return a response."
             )
 
-        if provider == "groq":
+        if provider in {"groq", "openrouter"}:
             content = completion.choices[0].message.content or ""
         else:
             content = completion.text or ""

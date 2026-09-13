@@ -11,34 +11,39 @@ module tb_alu8;
         .result(result)
     );
 
-    integer total_tests = 0;
-    integer tests_passed = 0;
-    integer tests_failed = 0;
+    integer total_tests;
+    integer tests_passed;
+    integer tests_failed;
 
     initial begin
-        // Test case 1: Addition with overflow
+        total_tests = 0;
+        tests_passed = 0;
+        tests_failed = 0;
+
+        // Test Case 1: Addition (opcode 000)
+        a = 8'h0A;
+        b = 8'h05;
+        opcode = 3'b000;
+        #10;
         total_tests = total_tests + 1;
-        a = 8'hFF;
-        b = 8'h01;
-        opcode = 3'b000; // addition
-        #10; // wait for combinational logic
-        if (result === 8'h00) begin
-            $display("Test 1 PASS: %h + %h = %h", a, b, result);
+        if (result === 8'h0F) begin
             tests_passed = tests_passed + 1;
+            $display("Test Case 1: PASS - Addition 0x0A + 0x05 = 0x0F");
         end else begin
-            $display("Test 1 FAIL: %h + %h = %h, expected 8'h00", a, b, result);
             tests_failed = tests_failed + 1;
+            $display("Test Case 1: FAIL - Expected 0x0F, Got 0x%02X", result);
         end
 
-        // Summary
-        $display("\nSIMULATION SUMMARY");
+        $display("");
+        $display("SIMULATION SUMMARY");
         $display("Total Test Cases: %0d", total_tests);
         $display("Passed Test Cases: %0d", tests_passed);
         $display("Failed Test Cases: %0d", tests_failed);
-        if (tests_failed == 0)
+        if (tests_failed == 0) begin
             $display("OVERALL STATUS : PASS");
-        else
+        end else begin
             $display("OVERALL STATUS : FAIL");
+        end
         $finish;
     end
 endmodule

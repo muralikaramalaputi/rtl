@@ -4,6 +4,7 @@ gunicorn
 whitenoise
 google-genai
 groq
+openai
 python-dotenv
 
 numpy

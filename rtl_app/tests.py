@@ -100,6 +100,21 @@ class TestbenchCountTests(TestCase):
         self.assertEqual(mock_generate.call_args_list[0].args[1], "groq")
         self.assertEqual(mock_generate.call_args_list[1].args[1], "groq")
 
+    @patch("rtl_app.rtl_generator._extract_verilog", return_value="module alu; endmodule")
+    @patch("rtl_app.rtl_generator.get_client")
+    def test_generation_supports_openrouter(self, mock_get_client, _extract_verilog):
+        client = MagicMock()
+        client.chat.completions.create.return_value.choices[0].message.content = (
+            "module alu; endmodule"
+        )
+        mock_get_client.return_value = client
+
+        from .rtl_generator import _generate
+
+        _generate("Generate an ALU.", "openrouter")
+
+        client.chat.completions.create.assert_called_once()
+
     @patch(
         "rtl_app.views.generate_rtl",
         return_value=("module dut; endmodule", "module tb; endmodule"),
