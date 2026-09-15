@@ -252,6 +252,8 @@ def _basic_systemverilog_validation(
     # Common malformed literals seen in LLM-generated code
     # --------------------------------------------------------
 
+    source = _source_without_comments_and_strings(content)
+
     malformed_literal_patterns = [
         r"\b\d+\s+me\b",
         r"\b\d+\s+mh\b",
@@ -261,7 +263,7 @@ def _basic_systemverilog_validation(
     ]
 
     for pattern in malformed_literal_patterns:
-        if re.search(pattern, content, flags=re.IGNORECASE):
+        if re.search(pattern, source, flags=re.IGNORECASE):
             errors.append(
                 f"Malformed numeric literal detected: {pattern}"
             )
@@ -282,8 +284,6 @@ def _basic_systemverilog_validation(
     # --------------------------------------------------------
     # Balanced structural keywords
     # --------------------------------------------------------
-
-    source = _source_without_comments_and_strings(content)
 
     keyword_pairs = [
         ("module", r"\bmodule\s+[A-Za-z_$][A-Za-z0-9_$]*", "endmodule"),
@@ -955,6 +955,7 @@ def _generate_all_dv_artifacts(
     rtl: str,
     include_uvm: bool = True,
     provider: str = "gemini",
+    correction: Optional[str] = None,
 ) -> Dict[str, str]:
     """
     Generate all DV artifacts using one Gemini request.
@@ -975,6 +976,22 @@ def _generate_all_dv_artifacts(
         rtl=rtl,
         include_uvm=include_uvm,
     )
+
+    if correction:
+        prompt += f"""
+
+==================================================
+CORRECTION REQUIRED
+==================================================
+
+Your previous response was rejected by static SystemVerilog validation:
+
+{correction}
+
+Regenerate the complete requested artifact package. Correct every listed
+error, keep the exact required filenames and delimiters, and do not emit
+malformed literals such as `8 me`, `8 mh`, or `8 xx` in source code.
+"""
 
     try:
         provider = normalize_provider(provider)
@@ -1102,12 +1119,23 @@ def _generate_all_dv_artifacts(
                     )
 
         if static_errors:
+            validation_message = "\n".join(
+                f"- {error}"
+                for error in static_errors
+            )
+
+            if correction is None:
+                return _generate_all_dv_artifacts(
+                    requirement=requirement,
+                    rtl=rtl,
+                    include_uvm=include_uvm,
+                    provider=provider,
+                    correction=validation_message,
+                )
+
             raise GenerationError(
                 "Generated DV artifacts failed static validation:\n"
-                + "\n".join(
-                    f"- {error}"
-                    for error in static_errors
-                )
+                + validation_message
             )
 
         # ----------------------------------------------------

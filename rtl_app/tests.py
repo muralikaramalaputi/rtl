@@ -39,6 +39,34 @@ class TestbenchCountTests(TestCase):
             _basic_systemverilog_validation("assertions.sv", artifact), []
         )
 
+    def test_dv_static_validation_ignores_bad_literals_in_comments_and_strings(self):
+        artifact = """
+            module coverage;
+                // Do not write an invalid literal such as 8 me => 8'h00.
+                initial $display("Example malformed literal: 8 me");
+            endmodule
+        """
+
+        self.assertEqual(
+            _basic_systemverilog_validation("functional_coverage.sv", artifact), []
+        )
+
+    def test_dv_static_validation_rejects_bad_literals_in_source(self):
+        artifact = """
+            module coverage;
+                reg [7:0] value;
+                initial begin
+                    value = 8 me;
+                end
+            endmodule
+        """
+
+        errors = _basic_systemverilog_validation("functional_coverage.sv", artifact)
+
+        self.assertTrue(
+            any("Malformed numeric literal" in error for error in errors)
+        )
+
     @patch("rtl_app.verification.shutil.which", return_value=None)
     @patch("rtl_app.verification.IVERILOG_PATH", "C:\\missing\\iverilog.exe")
     def test_verification_requires_iverilog(self, _which):
